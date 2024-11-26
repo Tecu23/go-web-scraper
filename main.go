@@ -2,11 +2,14 @@
 package main
 
 import (
+	"encoding/csv"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
@@ -40,9 +43,11 @@ func main() {
 
 	// Parse HTML
 	results := parseHTML(html, *tags)
-	for i, result := range results {
-		fmt.Printf("%d: %s\n", i+1, result)
-	}
+
+	// Save Output
+	saveAsJSON(results, *output)
+
+	fmt.Printf("Scraped data saved to %s\n", output)
 }
 
 func fetchHTML(url string) string {
@@ -81,4 +86,34 @@ func parseHTML(html, tags string) []string {
 	}
 
 	return results
+}
+
+func saveAsJSON(data []string, filename string) {
+	file, err := os.Create(filename)
+	if err != nil {
+		log.Fatalf("Error creating file: %v", err)
+	}
+	defer file.Close()
+
+	encoder := json.NewEncoder(file)
+	if err := encoder.Encode(data); err != nil {
+		log.Fatalf("Error encoding JSON: %v", err)
+	}
+}
+
+func saveAsCSV(data []string, filename string) {
+	file, err := os.Create(filename)
+	if err != nil {
+		log.Fatalf("Error creating file: %v", err)
+	}
+	defer file.Close()
+
+	writer := csv.NewWriter(file)
+	defer writer.Flush()
+
+	for _, line := range data {
+		if err := writer.Write([]string{line}); err != nil {
+			log.Fatalf("Error writing CSV: %v", err)
+		}
+	}
 }
