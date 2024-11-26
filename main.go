@@ -4,7 +4,9 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"log"
+	"net/http"
 )
 
 func main() {
@@ -28,4 +30,26 @@ func main() {
 	fmt.Printf("Scraping URL: %s\n", *url)
 	fmt.Printf("Scraping tags: %s\n", *tags)
 	fmt.Printf("Output will be saved to: %s\n", *output)
+
+	html := fetchHTML(*url)
+
+	fmt.Println(html[:200])
+}
+
+func fetchHTML(url string) string {
+	// Send GET request
+	resp, err := http.Get(url)
+	if err != nil {
+		log.Fatalf("Error fetching URL %s: %v", url, err)
+	}
+
+	defer resp.Body.Close()
+
+	// Read response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatalf("Error reading response body: %v", err)
+	}
+
+	return string(body)
 }
