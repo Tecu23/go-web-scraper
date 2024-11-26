@@ -7,6 +7,9 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strings"
+
+	"github.com/PuerkitoBio/goquery"
 )
 
 func main() {
@@ -27,13 +30,19 @@ func main() {
 		log.Fatal("Error: URL is required. Use --url flag to specify it.")
 	}
 
+	// Print Args
 	fmt.Printf("Scraping URL: %s\n", *url)
 	fmt.Printf("Scraping tags: %s\n", *tags)
 	fmt.Printf("Output will be saved to: %s\n", *output)
 
+	// Fetch HTML
 	html := fetchHTML(*url)
 
-	fmt.Println(html[:200])
+	// Parse HTML
+	results := parseHTML(html, *tags)
+	for i, result := range results {
+		fmt.Printf("%d: %s\n", i+1, result)
+	}
 }
 
 func fetchHTML(url string) string {
@@ -52,4 +61,24 @@ func fetchHTML(url string) string {
 	}
 
 	return string(body)
+}
+
+func parseHTML(html, tags string) []string {
+	var results []string
+
+	// Load HTML into GoQuery
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(html))
+	if err != nil {
+		log.Fatalf("Error parsing HTML: %v", err)
+	}
+
+	// Extract specified tags
+	tagList := strings.Split(tags, ",")
+	for _, tag := range tagList {
+		doc.Find(tag).Each(func(_ int, s *goquery.Selection) {
+			results = append(results, s.Text())
+		})
+	}
+
+	return results
 }
